@@ -25,8 +25,6 @@ pipeline {
                 script {
                     // Extract IP address from SONARQUBE_HOST for display
                     def sonarIP = sh(script: "echo ${SONARQUBE_HOST} | sed -e 's|^http://||' -e 's|:.*\$||'", returnStdout: true).trim()
-                    
-                    // Print IP address information
                     echo "SonarQube Analysis Server IP: ${sonarIP}"
                     
                     withSonarQubeEnv('SonarQube Server') { // Ensure this name matches the configured SonarQube instance name
@@ -73,7 +71,7 @@ EOF
                     echo "SonarQube Quality Gate IP: ${sonarIP}"
                     
                     try {
-                        timeout(time: 1, unit: 'MINUTES') {
+                        timeout(time: 2, unit: 'MINUTES') {  // Increased timeout to 2 minutes
                             def qg = waitForQualityGate()
                             if (qg.status != 'OK') {
                                 echo "Quality Gate failed with status: ${qg.status}"
