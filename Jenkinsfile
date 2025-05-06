@@ -1,5 +1,9 @@
 pipeline {
     agent any
+    environment {
+        // SonarQube environment variable, set this to the name of your SonarQube server configuration in Jenkins
+        SONARQUBE_SERVER = 'SonarQube'
+    }
     stages {
         stage('Checkout') {
             steps {
@@ -15,6 +19,18 @@ pipeline {
                         . venv/bin/activate
                         pip install -r requirements.txt
                     '''
+                }
+            }
+        }
+        stage('SonarQube Analysis') {
+            steps {
+                script {
+                    // Running the SonarQube scanner to analyze the project
+                    withSonarQubeEnv(SONARQUBE_SERVER) {
+                        sh 'mvn clean verify sonar:sonar'
+                        // For Python, use a different command, e.g., using sonar-scanner CLI
+                        // sh 'sonar-scanner -Dsonar.projectKey=your_project_key'
+                    }
                 }
             }
         }
@@ -38,5 +54,3 @@ pipeline {
         }
     }
 }
-
-
