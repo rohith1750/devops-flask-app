@@ -27,6 +27,11 @@ pipeline {
             steps {
                 withSonarQubeEnv("${SONARQUBE_SERVER}") {
                     sh 'sonar-scanner'
+                    script {
+                        // Get SonarQube URL from Jenkins environment variables
+                        def sonarUrl = "${SONARQUBE_SERVER}_URL"
+                        echo "SonarQube Analysis is being done at: ${sonarUrl}"
+                    }
                 }
             }
         }
