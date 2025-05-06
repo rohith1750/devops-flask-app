@@ -1,115 +1,54 @@
 pipeline {
     agent any
-    
-    tools {
-        // Define the SonarQube Scanner tool configured in Jenkins
-        sonarqubeScanner 'SonarQubeScanner'
+
+    environment {
+        DOCKER_IMAGE = "rohith1750/devops-flask-app"  // Change to your Docker Hub image name
     }
-    
+
     stages {
-        stage('Checkout') {
+        stage('Clone Repository') {
             steps {
-                // Get code from source control
-                checkout scm
+                git 'https://github.com/rohith1750/devops-flask-app.git'
             }
         }
-        
-        stage('Setup Python Environment') {
+
+        stage('Build Docker Image') {
             steps {
-                // Create and activate virtual environment
-                sh '''
-                    python -m venv venv
-                    . venv/bin/activate
-                    pip install --upgrade pip
-                    pip install -r requirements.txt
-                    pip install pytest pytest-cov
-                '''
-            }
-        }
-        
-        stage('Run Tests') {
-            steps {
-                sh '''
-                    . venv/bin/activate
-                    python -m pytest
-                '''
-            }
-        }
-        
-        stage('Test with Coverage') {
-            steps {
-                sh '''
-                    . venv/bin/activate
-                    python -m pytest --cov=. --cov-report=xml:coverage.xml
-                '''
-            }
-        }
-        
-        stage('SonarQube Analysis') {
-            steps {
-                withSonarQubeEnv('SonarQube') {
-                    sh '''
-                        sonar-scanner \
-                        -Dsonar.projectKey=flask-app \
-                        -Dsonar.projectName="Flask Application" \
-                        -Dsonar.sources=. \
-                        -Dsonar.python.coverage.reportPaths=coverage.xml \
-                        -Dsonar.exclusions=**/*.pyc,venv/**,tests/**,.git/**,.pytest_cache/**
-                    '''
-                }
-                
-                // Extract and echo the SonarQube URL for visibility
                 script {
-                    def sonarUrl = "${env.SONAR_HOST_URL}/dashboard?id=flask-app"
-                    echo "-------------------------------------------------------"
-                    echo "ANALYSIS SUCCESSFUL, you can find the results at: ${sonarUrl}"
-                    echo "-------------------------------------------------------"
+                    echo 'Building Docker image...'
+                    dockerImage = docker.build("${DOCKER_IMAGE}:${BUILD_NUMBER}")
                 }
             }
         }
-        
-        stage('Quality Gate') {
+
+        stage('Push Docker Image') {
             steps {
-                // Wait for SonarQube Quality Gate to complete
-                timeout(time: 5, unit: 'MINUTES') {
-                    waitForQualityGate abortPipeline: true
+                script {
+                    echo 'Pushing Docker image to Docker Hub...'
+                    docker.withRegistry('https://index.docker.io/v1/', 'docker-hub-creds') {
+                        dockerImage.push('latest')
+                    }
                 }
             }
         }
-        
-        stage('Build') {
-            steps {
-                sh '''
-                    . venv/bin/activate
-                    # Add your Flask app build steps here
-                    # For example, compiling static assets, etc.
-                '''
-            }
-        }
-        
-        stage('Deploy') {
-            steps {
-                echo 'Deploying Flask application...'
-                // Add your deployment steps here
-            }
-        }
+
+        // Optional: Add test or quality check stages here (e.g., SonarQube)
+        // stage('SonarQube Analysis') {
+        //     steps {
+        //         script {
+        //             echo 'Running SonarQube analysis...'
+        //             // Run SonarQube analysis here
+        //         }
+        //     }
+        // }
     }
-    
+
     post {
-        always {
-            // Clean up workspace
-            cleanWs()
-        }
         success {
-            echo 'Pipeline executed successfully!'
-            // Display SonarQube URL again for convenience
-            script {
-                def sonarUrl = "${env.SONAR_HOST_URL}/dashboard?id=flask-app"
-                echo "SonarQube Analysis Results: ${sonarUrl}"
-            }
+            echo 'Pipeline execution completed successfully!'
         }
         failure {
-            echo 'Pipeline execution failed!'
+            echo 'Pipeline execution failed.'
         }
     }
 }
