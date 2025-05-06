@@ -2,53 +2,47 @@ pipeline {
     agent any
 
     environment {
-        DOCKER_IMAGE = "rohith1750/devops-flask-app"  // Change to your Docker Hub image name
+        // Optional: define environment variables here
     }
 
     stages {
-        stage('Clone Repository') {
+        stage('Checkout') {
             steps {
-                git 'https://github.com/rohith1750/devops-flask-app.git'
+                git branch: 'main',
+                    url: 'https://github.com/rohith1750/devops-flask-app.git'
+            }
+        }
+
+        stage('Install Dependencies') {
+            steps {
+                sh '''
+                    python3 -m venv venv
+                    . venv/bin/activate
+                    pip install -r requirements.txt
+                '''
             }
         }
 
         stage('Build Docker Image') {
             steps {
-                script {
-                    echo 'Building Docker image...'
-                    dockerImage = docker.build("${DOCKER_IMAGE}:${BUILD_NUMBER}")
-                }
+                sh 'docker build -t my-flask-app .'
             }
         }
 
-        stage('Push Docker Image') {
+        stage('Deploy') {
             steps {
-                script {
-                    echo 'Pushing Docker image to Docker Hub...'
-                    docker.withRegistry('https://index.docker.io/v1/', 'docker-hub-creds') {
-                        dockerImage.push('latest')
-                    }
-                }
+                echo 'Deploying application...'
+                // Add deployment commands here, e.g., docker run or kubectl apply
             }
         }
-
-        // Optional: Add test or quality check stages here (e.g., SonarQube)
-        // stage('SonarQube Analysis') {
-        //     steps {
-        //         script {
-        //             echo 'Running SonarQube analysis...'
-        //             // Run SonarQube analysis here
-        //         }
-        //     }
-        // }
     }
 
     post {
         success {
-            echo 'Pipeline execution completed successfully!'
+            echo 'Pipeline completed successfully.'
         }
         failure {
-            echo 'Pipeline execution failed.'
+            echo 'Pipeline failed.'
         }
     }
 }
