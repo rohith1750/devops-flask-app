@@ -1,10 +1,6 @@
 pipeline {
     agent any
 
-    environment {
-        // Optional: define environment variables here
-    }
-
     stages {
         stage('Checkout') {
             steps {
@@ -32,7 +28,7 @@ pipeline {
         stage('Deploy') {
             steps {
                 echo 'Deploying application...'
-                // Add deployment commands here, e.g., docker run or kubectl apply
+                // You can add docker run or other deploy logic here
             }
         }
     }
