@@ -29,7 +29,7 @@ pipeline {
                     // Print IP address information
                     echo "SonarQube Analysis Server IP: ${sonarIP}"
                     
-                    withSonarQubeEnv('SonarQube') {
+                    withSonarQubeEnv('SonarQube') { // Ensure this name matches the configured SonarQube instance name
                         sh """
                             . venv/bin/activate
                             
