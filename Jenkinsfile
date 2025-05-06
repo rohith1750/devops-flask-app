@@ -1,8 +1,8 @@
 pipeline {
     agent any
     environment {
-        // SonarQube environment variable, set this to the name of your SonarQube server configuration in Jenkins
-        SONARQUBE_SERVER = 'SonarQube'
+        // Set the SonarQube environment variable to the name of your SonarQube server in Jenkins
+        SONARQUBE_SERVER = 'SonarQube'  // Make sure this matches the SonarQube server name in Jenkins
     }
     stages {
         stage('Checkout') {
@@ -27,9 +27,8 @@ pipeline {
                 script {
                     // Running the SonarQube scanner to analyze the project
                     withSonarQubeEnv(SONARQUBE_SERVER) {
-                        sh 'mvn clean verify sonar:sonar'
-                        // For Python, use a different command, e.g., using sonar-scanner CLI
-                        // sh 'sonar-scanner -Dsonar.projectKey=your_project_key'
+                        // For Python projects, use the sonar-scanner CLI
+                        sh 'sonar-scanner -Dsonar.projectKey=devops-flask-app -Dsonar.sources=.'
                     }
                 }
             }
@@ -48,6 +47,10 @@ pipeline {
     post {
         success {
             echo 'Pipeline completed successfully.'
+            script {
+                // Wait for SonarQube quality gate result
+                waitForQualityGate()
+            }
         }
         failure {
             echo 'Pipeline failed. Check the logs for details.'
