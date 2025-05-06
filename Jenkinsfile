@@ -8,7 +8,14 @@ pipeline {
         }
         stage('Install Dependencies') {
             steps {
-                sh 'pip install -r requirements.txt'
+                script {
+                    // Creating and activating the virtual environment
+                    sh '''
+                        python3 -m venv venv
+                        . venv/bin/activate
+                        pip install -r requirements.txt
+                    '''
+                }
             }
         }
         stage('Build Docker Image') {
@@ -31,4 +38,5 @@ pipeline {
         }
     }
 }
+
 
