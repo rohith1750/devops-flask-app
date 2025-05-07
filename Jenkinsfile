@@ -1,7 +1,7 @@
 pipeline {
     agent any
     environment {
-        SONARQUBE_HOST = 'http://35.222.45.90:9000'
+        SONARQUBE_HOST = 'http://35.222.45.90:9000'  // SonarQube server URL
         PROJECT_KEY = 'devops-flask-app'
     }
     stages {
@@ -27,7 +27,8 @@ pipeline {
                     def sonarIP = sh(script: "echo ${SONARQUBE_HOST} | sed -e 's|^http://||' -e 's|:.*\$||'", returnStdout: true).trim()
                     echo "SonarQube Analysis Server IP: ${sonarIP}"
                     
-                    withSonarQubeEnv('SonarQube Server') { // Ensure this name matches the configured SonarQube instance name
+                    // Use the SonarQube environment configured in Jenkins
+                    withSonarQubeEnv('SonarQube Server') {  // Ensure this name matches your configured SonarQube server in Jenkins
                         sh """
                             . venv/bin/activate
                             
