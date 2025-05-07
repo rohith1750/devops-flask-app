@@ -67,11 +67,7 @@ EOF
                 sh 'docker build -t my-flask-app .'
             }
         }
-        stage('Deploy') {
-            steps {
-                echo 'Deploying application...'
-            }
-        }
+     
     }
     post {
         success {
