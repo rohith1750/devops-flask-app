@@ -1,7 +1,7 @@
 pipeline {
     agent any
     environment {
-        SONARQUBE_HOST = 'http://35.222.45.90:9000'  // SonarQube server URL
+        SONARQUBE_HOST = 'http://35.222.45.90:9000'  // Fixed URL
         PROJECT_KEY = 'devops-flask-app'
     }
     stages {
@@ -23,40 +23,21 @@ pipeline {
         stage('SonarQube Analysis') {
             steps {
                 script {
-                    // Extract IP address from SONARQUBE_HOST for display
-                    def sonarIP = sh(script: "echo ${SONARQUBE_HOST} | sed -e 's|^http://||' -e 's|:.*\$||'", returnStdout: true).trim()
+                    def sonarIP = sh(script: "echo ${SONARQUBE_HOST} | sed -e 's|^http://||' -e 's|:.*$||'", returnStdout: true).trim()
                     echo "SonarQube Analysis Server IP: ${sonarIP}"
-                    
-                    // Use the SonarQube environment configured in Jenkins
-                    withSonarQubeEnv('SonarQube Server') {  // Ensure this name matches your configured SonarQube server in Jenkins
+
+                    withSonarQubeEnv('SonarQube Server') {
                         sh """
                             . venv/bin/activate
-                            
-                            # Create properties file for SonarQube
+
                             cat > sonar-project.properties << EOF
 sonar.projectKey=${PROJECT_KEY}
 sonar.projectName=DevOps Flask App
 sonar.sources=.
 sonar.python.coverage.reportPaths=coverage.xml
 EOF
-                            
-                            # Run SonarQube Scanner
-                            sonar-scanner || echo "SonarQube scan failed but continuing pipeline"
-                            
-                            # Print expected output with IP address highlighted
-                            echo "[INFO] \$(date +%H:%M:%S.%3N) CPD Executor CPD calculation finished (done) | time=0ms"
-                            echo "[INFO] \$(date +%H:%M:%S.%3N) Analysis report generated in 133ms, dir size=99 KB"
-                            echo "[INFO] \$(date +%H:%M:%S.%3N) Analysis report compressed in 44ms, zip size=16 KB"
-                            echo "[INFO] \$(date +%H:%M:%S.%3N) Analysis report uploaded in 187ms"
-                            echo "[INFO] \$(date +%H:%M:%S.%3N) ANALYSIS SUCCESSFUL, you can browse ${SONARQUBE_HOST}/dashboard?id=${PROJECT_KEY}"
-                            echo "[INFO] \$(date +%H:%M:%S.%3N) Note that you will be able to access the updated dashboard once the server has processed the submitted analysis report"
-                            echo "[INFO] \$(date +%H:%M:%S.%3N) More about the report processing at ${SONARQUBE_HOST}/api/ce/task?id=AZMG5BBd887-9p16nu57"
-                            echo "[INFO] \$(date +%H:%M:%S.%3N) Analysis total time: 9.204 s"
-                            echo "[INFO] --------------------------------------------------------------"
-                            
-                            # Display IP address again for emphasis
-                            echo "[INFO] \$(date +%H:%M:%S.%3N) SonarQube Analysis IP address: ${sonarIP}"
-                            echo "[INFO] \$(date +%H:%M:%S.%3N) Dashboard URL: ${SONARQUBE_HOST}/dashboard?id=${PROJECT_KEY}"
+
+                            sonar-scanner
                         """
                     }
                 }
@@ -66,22 +47,17 @@ EOF
             steps {
                 script {
                     echo "Checking Quality Gate at ${SONARQUBE_HOST}"
-                    
-                    // Extract IP address for display
-                    def sonarIP = sh(script: "echo ${SONARQUBE_HOST} | sed -e 's|^http://||' -e 's|:.*\$||'", returnStdout: true).trim()
-                    echo "SonarQube Quality Gate IP: ${sonarIP}"
-                    
                     try {
-                        timeout(time: 2, unit: 'MINUTES') {  // Increased timeout to 2 minutes
+                        timeout(time: 2, unit: 'MINUTES') {
                             def qg = waitForQualityGate()
                             if (qg.status != 'OK') {
-                                echo "Quality Gate failed with status: ${qg.status}"
+                                error "Quality Gate failed with status: ${qg.status}"
                             } else {
                                 echo "Quality Gate passed!"
                             }
                         }
                     } catch (Exception e) {
-                        echo "Quality Gate check failed but continuing: ${e.message}"
+                        echo "Quality Gate check failed: ${e.message}"
                     }
                 }
             }
@@ -99,13 +75,11 @@ EOF
     }
     post {
         success {
-            echo "Pipeline completed successfully."
-            echo "SonarQube Analysis Dashboard: ${SONARQUBE_HOST}/dashboard?id=${PROJECT_KEY}"
-            
-            // Extract and display IP one more time in success message
             script {
-                def sonarIP = sh(script: "echo ${SONARQUBE_HOST} | sed -e 's|^http://||' -e 's|:.*\$||'", returnStdout: true).trim()
+                def sonarIP = sh(script: "echo ${SONARQUBE_HOST} | sed -e 's|^http://||' -e 's|:.*$||'", returnStdout: true).trim()
+                echo "Pipeline completed successfully."
                 echo "SonarQube Server IP: ${sonarIP}"
+                echo "SonarQube Dashboard: ${SONARQUBE_HOST}/dashboard?id=${PROJECT_KEY}"
             }
         }
         failure {
