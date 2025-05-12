@@ -15,21 +15,22 @@ spec:
       imagePullSecrets:
         - name: regsecret
       containers:
-      - name: flask-container
-        image: rohith136/devops-flask-app:latest
-        ports:
-        - containerPort: 5000
+        - name: flask-container
+          image: rohith136/devops-flask-app:latest
+          ports:
+            - containerPort: 5000
 ---
 apiVersion: v1
 kind: Service
 metadata:
   name: flask-service
 spec:
-  type: NodePort
+  type: LoadBalancer  # Change this to LoadBalancer for external exposure
   selector:
     app: flask
   ports:
     - protocol: TCP
       port: 5000
       targetPort: 5000
-      nodePort: 30001
+      # You can optionally specify nodePort if you want to use NodePort instead
+      # nodePort: 30001
