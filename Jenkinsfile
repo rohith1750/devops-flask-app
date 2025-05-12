@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     environment {
-        IMAGE_NAME = 'rohith1750/devops-flask-app'
+        IMAGE_NAME = 'rohith136/devops-flask-app'
     }
 
     stages {
