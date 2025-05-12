@@ -12,6 +12,8 @@ spec:
       labels:
         app: flask
     spec:
+      imagePullSecrets:
+        - name: regsecret
       containers:
       - name: flask-container
         image: rohith136/devops-flask-app:latest
