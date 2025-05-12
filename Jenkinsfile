@@ -1,7 +1,7 @@
 pipeline {
     agent any
     environment {
-        SONARQUBE_HOST = 'http://35.222.45.90:9000'  // Fixed URL
+        SONARQUBE_HOST = 'http://34.60.108.131:9000'  // Fixed URL
         PROJECT_KEY = 'devops-flask-app'
     }
     stages {
