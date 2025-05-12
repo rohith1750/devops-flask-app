@@ -1,9 +1,10 @@
 pipeline {
     agent any
+
     environment {
-        SONARQUBE_HOST = 'http://34.60.108.131:9000'  // Fixed URL
-        PROJECT_KEY = 'devops-flask-app'
+        IMAGE_NAME = 'rohith1750/devops-flask-app'
     }
+
     stages {
         stage('Checkout') {
             steps {
@@ -11,6 +12,7 @@ pipeline {
                     url: 'https://github.com/rohith1750/devops-flask-app.git'
             }
         }
+
         stage('Install Dependencies') {
             steps {
                 sh '''
@@ -20,63 +22,28 @@ pipeline {
                 '''
             }
         }
-        stage('SonarQube Analysis') {
-            steps {
-                script {
-                    def sonarIP = sh(script: "echo ${SONARQUBE_HOST} | sed -e 's|^http://||' -e 's|:.*$||'", returnStdout: true).trim()
-                    echo "SonarQube Analysis Server IP: ${sonarIP}"
 
-                    withSonarQubeEnv('SonarQube Server') {
-                        sh """
-                            . venv/bin/activate
-
-                            cat > sonar-project.properties << EOF
-sonar.projectKey=${PROJECT_KEY}
-sonar.projectName=DevOps Flask App
-sonar.sources=.
-sonar.python.coverage.reportPaths=coverage.xml
-EOF
-
-                            sonar-scanner
-                        """
-                    }
-                }
-            }
-        }
-        stage('Quality Gate') {
-            steps {
-                script {
-                    echo "Checking Quality Gate at ${SONARQUBE_HOST}"
-                    try {
-                        timeout(time: 2, unit: 'MINUTES') {
-                            def qg = waitForQualityGate()
-                            if (qg.status != 'OK') {
-                                error "Quality Gate failed with status: ${qg.status}"
-                            } else {
-                                echo "Quality Gate passed!"
-                            }
-                        }
-                    } catch (Exception e) {
-                        echo "Quality Gate check failed: ${e.message}"
-                    }
-                }
-            }
-        }
         stage('Build Docker Image') {
             steps {
-                sh 'docker build -t my-flask-app .'
+                sh 'docker build -t $IMAGE_NAME .'
             }
         }
-     
+
+        stage('Push to Docker Hub') {
+            steps {
+                withCredentials([usernamePassword(credentialsId: 'dockerhub-creds', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+                    sh '''
+                        echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
+                        docker push $IMAGE_NAME
+                    '''
+                }
+            }
+        }
     }
+
     post {
         success {
-            script {
-                def sonarIP = sh(script: "echo ${SONARQUBE_HOST} | sed -e 's|^http://||' -e 's|:.*$||'", returnStdout: true).trim()
-                echo "Pipeline completed successfully."
-                echo "SonarQube Server IP: ${sonarIP}"
-                echo "SonarQube Dashboard: ${SONARQUBE_HOST}/dashboard?id=${PROJECT_KEY}"
-            }
+            echo "Docker image pushed to Docker Hub: $IMAGE_NAME"
         }
         failure {
             echo 'Pipeline failed.'
